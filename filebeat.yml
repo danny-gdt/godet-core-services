@@ -1,0 +1,20 @@
+# filebeat.yml
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      templates:
+        - condition:
+            # On ne cible que le conteneur du service applicatif
+            contains:
+              docker.container.name: "auth-service"
+          config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              # On dit à Filebeat que les logs sont en JSON
+              json.keys_under_root: true
+              json.add_error_key: true
+              json.message_key: msg # La clé contenant le message principal de pino
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]

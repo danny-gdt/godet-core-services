@@ -1,0 +1,30 @@
+{
+    "name": "godet-core-services",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+      "dev:auth": "pnpm -F auth-service run dev",
+      "dev:frontend": "pnpm -F front-end run dev",
+      "build:auth": "pnpm -F auth-service run build",
+      "build:frontend": "pnpm -F front-end run build",
+      "db:prisma:generate": "pnpm -F auth-service exec prisma generate",
+      "db:prisma:migrate": "pnpm -F auth-service exec prisma migrate dev",
+
+      
+      "add:auth": "pnpm -F auth-service add",
+      "add:frontend": "pnpm -F front-end add",
+  
+      "docker:up": "docker-compose up --build -d",
+      "docker:down": "docker-compose down",
+      "docker:logs": "docker-compose logs -f",
+      "docker:logs:auth": "docker-compose logs -f auth-service",
+  
+      "db:generate": "docker-compose exec auth-service pnpm exec prisma generate",
+      "db:migrate": "docker-compose exec auth-service pnpm exec prisma migrate dev",
+      "db:studio": "docker-compose exec auth-service pnpm exec prisma studio"
+    },
+    "devDependencies": {
+      "typescript": "^5.0.0",
+      "prettier": "^3.0.0"
+    }
+  }
