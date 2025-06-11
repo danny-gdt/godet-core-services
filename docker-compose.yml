@@ -3,12 +3,13 @@ services:
   auth-service:
     container_name: auth-service
     build:
-      context: ./auth-service # Construit l'image à partir du Dockerfile dans le dossier ./auth-service
+      context: . # Le contexte est à la racine du monorepo
+      dockerfile: auth-service/Dockerfile # On spécifie le chemin vers le Dockerfile
     ports:
       - "3000:3000"
     environment:
       # L'URL de connexion pointe vers le service postgres-db
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:5432/${POSTGRES_DB}?schema=public"
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:5432/${POSTGRES_DB_AUTH}?schema=public"
     depends_on:
       - postgres-db
     networks:
@@ -21,7 +22,7 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_DB=${POSTGRES_DB_AUTH}
     ports:
       - "5433:5432" # Permet de se connecter à la BDD depuis votre machine locale si besoin
     volumes:

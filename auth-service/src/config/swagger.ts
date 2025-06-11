@@ -1,4 +1,5 @@
 import swaggerJsdoc from 'swagger-jsdoc';
+import path from 'path';
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -20,7 +21,8 @@ const options: swaggerJsdoc.Options = {
     },
     security: [{ bearerAuth: [] }],
   },
-  apis: ['./src/api/auth/auth.routes.ts'], // Path to the API docs
+  // Le glob {js,ts} fonctionne à la fois en développement (.ts) et en production (.js).
+  apis: [path.join(__dirname, '..', 'api', '**', '*.{js,ts}')],
 };
 
 export const swaggerSpec = swaggerJsdoc(options); 

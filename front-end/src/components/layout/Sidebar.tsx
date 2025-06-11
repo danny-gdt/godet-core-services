@@ -31,7 +31,7 @@ const Sidebar: React.FC = () => {
           </li>
           <li>
             <NavLink 
-              to="/Grafana" 
+              to="/grafana" 
               className={({ isActive }) => 
                 `block p-2 rounded hover:bg-gray-900 ${isActive ? 'bg-gray-800' : ''}`
               }
