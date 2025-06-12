@@ -73,7 +73,7 @@ const RegisterPage: React.FC = () => {
               </Button>
             </div>
             <div className="mt-6 text-center">
-                <Link to="/register" className=" text-sm text-blue-500 hover:text-blue-600">Login</Link>
+                <Link to="/login" className=" text-sm text-blue-500 hover:text-blue-600">Login</Link>
             </div>
           </form>
         </Card>

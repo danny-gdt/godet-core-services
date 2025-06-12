@@ -9,6 +9,12 @@ WORKDIR /app
 # Installer pnpm
 RUN npm install -g pnpm
 
+# Configurer pnpm pour utiliser le registre npm officiel avec des options robustes
+RUN pnpm config set registry https://registry.npmjs.org/
+RUN pnpm config set fetch-retries 5
+RUN pnpm config set fetch-retry-mintimeout 20000
+RUN pnpm config set fetch-retry-maxtimeout 120000
+
 # Copier les manifests et le schéma Prisma
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
@@ -37,6 +43,12 @@ WORKDIR /app
 # Installer pnpm
 RUN npm install -g pnpm
 
+# Configurer pnpm pour utiliser le registre npm officiel avec des options robustes
+RUN pnpm config set registry https://registry.npmjs.org/
+RUN pnpm config set fetch-retries 5
+RUN pnpm config set fetch-retry-mintimeout 20000
+RUN pnpm config set fetch-retry-maxtimeout 120000
+
 # Copier les manifests et le schéma pour l'installation de production
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY auth-service/package.json ./auth-service/
@@ -45,7 +57,7 @@ COPY auth-service/prisma ./auth-service/prisma/
 # Installer UNIQUEMENT les dépendances de production.
 # Le script `postinstall` ("prisma generate") est exécuté ici, ce qui garantit
 # que le client Prisma est généré correctement pour l'environnement final.
-RUN pnpm install --filter auth-service --prod --frozen-lockfile
+RUN pnpm install --filter auth-service --frozen-lockfile
 
 # Copier le code JavaScript compilé dans son répertoire d'origine
 COPY --from=builder /app/auth-service/dist ./auth-service/dist

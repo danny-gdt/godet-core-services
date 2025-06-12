@@ -4,15 +4,17 @@
     "private": true,
     "scripts": {
       "dev:auth": "pnpm -F auth-service run dev",
-      "dev:frontend": "pnpm -F front-end run dev",
       "build:auth": "pnpm -F auth-service run build",
+      "dev:frontend": "pnpm -F front-end run dev",
       "build:frontend": "pnpm -F front-end run build",
+      
       "db:prisma:generate": "pnpm -F auth-service exec prisma generate",
       "db:prisma:migrate": "pnpm -F auth-service exec prisma migrate dev",
+      "db:migrate:auth": "docker-compose exec -w /app/auth-service auth-service pnpm exec prisma migrate dev",
       
       "add:auth": "pnpm -F auth-service add",
       "add:frontend": "pnpm -F front-end add",
-  
+      
       "docker:up": "docker-compose up --build -d --force-recreate",
       "docker:down": "docker-compose down",
       "docker:logs": "docker-compose logs -f",

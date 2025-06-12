@@ -7,6 +7,7 @@ import { AuthRequest, JwtPayload } from './auth.types';
 import crypto from 'crypto';
 
 const generateTokens = (userId: string) => {
+    
     const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET!, {
         expiresIn: process.env.ACCESS_TOKEN_EXPIRATION || '15m',
     } as SignOptions);
@@ -17,6 +18,7 @@ const generateTokens = (userId: string) => {
     const refreshToken = jwt.sign(refreshTokenPayload, process.env.REFRESH_TOKEN_SECRET!, {
         expiresIn: process.env.REFRESH_TOKEN_EXPIRATION || '7d',
     } as SignOptions);
+    
     return { accessToken, refreshToken };
 };
 

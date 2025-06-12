@@ -10,10 +10,19 @@ services:
     environment:
       # L'URL de connexion pointe vers le service postgres-db
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:5432/${POSTGRES_DB_AUTH}?schema=public"
+      FRONTEND_URL: "http://localhost:5173"
+      ACCESS_TOKEN_SECRET: "8F67FECA883AAB7585DA7784A2745"
+      REFRESH_TOKEN_SECRET: "521DE98CAEEC14C869992DA637685"
+      ACCESS_TOKEN_EXPIRATION: "15m"
+      REFRESH_TOKEN_EXPIRATION: "7d"
     depends_on:
       - postgres-db
     networks:
       - godet-net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
 
   # --- Base de Données ---
   postgres-db:
@@ -57,18 +66,16 @@ services:
     networks:
       - godet-net
 
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.14.0
-    container_name: filebeat
-    user: root # Nécessaire pour accéder aux logs Docker sur la machine hôte
-    command: filebeat -e -strict.perms=false
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.0
+    container_name: logstash
+    ports:
+      - "12201:12201/udp" # On expose le port GELF
     volumes:
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro # Monte votre configuration
-      - /var/run/docker.sock:/var/run/docker.sock:ro # Permet de découvrir les conteneurs
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro # Accède aux fichiers de logs des conteneurs
+      # On monte notre fichier de configuration
+      - ./logstash/pipeline.conf:/usr/share/logstash/pipeline/pipeline.conf:ro
     depends_on:
       - elasticsearch
-      - kibana
     networks:
       - godet-net
 
