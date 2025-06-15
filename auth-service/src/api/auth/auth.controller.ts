@@ -5,9 +5,9 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import { prisma } from '../../server';
 import { AuthRequest, JwtPayload } from './auth.types';
 import crypto from 'crypto';
+import redisClient from '../../redis/redis.client';
 
 const generateTokens = (userId: string) => {
-    
     const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET!, {
         expiresIn: process.env.ACCESS_TOKEN_EXPIRATION || '15m',
     } as SignOptions);
@@ -104,9 +104,6 @@ export const refreshToken = async (req: Request, res: Response) => {
             where: { hashedToken },
         });
 
-        console.log('dbToken', dbToken);
-        console.log('payload', payload);
-
         if (!dbToken || dbToken.revoked || dbToken.userId !== payload.userId) {
             return res.status(401).json({ message: 'Unauthorized: Invalid token.' });
         }
@@ -142,17 +139,25 @@ export const me = async (req: AuthRequest, res: Response) => {
     }
 
     try {
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, email: true, createdAt: true, updatedAt: true },
-        });
 
-        if (!user) {
-            // This case should be rare if token is valid and user exists
-            return res.status(404).json({ message: 'User not found.' });
+        const cachedUser = await redisClient.get(`user:${userId}`);
+        if (cachedUser) {
+            return res.json(JSON.parse(cachedUser));
+        } else {
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, email: true, createdAt: true, updatedAt: true },
+            });
+            await redisClient.setEx(`user:${userId}`, 60 * 60 * 24, JSON.stringify(user));
+
+            if (!user) {
+                // This case should be rare if token is valid and user exists
+                return res.status(404).json({ message: 'User not found.' });
+            }
+
+            return res.json(user);
         }
 
-        return res.json(user);
     } catch (error) {
         console.error('Me Error:', error);
         return res.status(500).json({ message: 'Internal server error' });

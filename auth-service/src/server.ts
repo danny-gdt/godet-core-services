@@ -8,6 +8,7 @@ import authRoutes from './api/auth/auth.routes';
 import { PrismaClient } from '@prisma/client';
 import { pinoHttp } from 'pino-http';
 import { responseLoggerMiddleware } from './middleware/responseBodyLogger';
+import { createClient } from 'redis';
 
 dotenv.config();
 

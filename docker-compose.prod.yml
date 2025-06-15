@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # --- Service Applicatif ---
+  auth-service:
+    container_name: auth-service-prod
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Variables d'environnement pour AWS RDS (PostgreSQL)
+      DATABASE_URL: "${DATABASE_URL}"
+      # Variables d'environnement pour AWS ElastiCache (Redis)
+      REDIS_URL: "${REDIS_URL}"
+      # Variables d'environnement de l'application
+      NODE_ENV: "production"
+      FRONTEND_URL: "${FRONTEND_URL}"
+      ACCESS_TOKEN_SECRET: "${ACCESS_TOKEN_SECRET}"
+      REFRESH_TOKEN_SECRET: "${REFRESH_TOKEN_SECRET}"
+      ACCESS_TOKEN_EXPIRATION: "${ACCESS_TOKEN_EXPIRATION:-15m}"
+      REFRESH_TOKEN_EXPIRATION: "${REFRESH_TOKEN_EXPIRATION:-7d}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    restart: unless-stopped
+    networks:
+      - godet-net-prod
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "udp://logstash:12201"
+
+  # --- Elasticsearch ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    container_name: elasticsearch-prod
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=godet-cluster
+      - node.name=godet-node-1
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    networks:
+      - godet-net-prod
+
+  # --- Logstash ---
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.0
+    container_name: logstash-prod
+    environment:
+      # Variables d'environnement pour Elasticsearch
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    volumes:
+      - ./logstash/pipeline.prod.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "12201:12201/udp"  # Port GELF
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - godet-net-prod
+
+  # --- Kibana ---
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.0
+    container_name: kibana-prod
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana-prod
+      - SERVER_HOST=0.0.0.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:
+      - godet-net-prod
+
+# --- Volumes pour la persistance ---
+volumes:
+  elasticsearch-data:
+
+# --- Réseau Personnalisé pour la Production ---
+networks:
+  godet-net-prod:
+    driver: bridge 

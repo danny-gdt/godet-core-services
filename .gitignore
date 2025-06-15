@@ -16,10 +16,8 @@ lerna-debug.log*
 
 # Environment
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.prod.example
+
 
 # Prisma
 /prisma/dev.db

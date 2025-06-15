@@ -18,7 +18,13 @@
       "docker:up": "docker-compose up --build -d --force-recreate",
       "docker:down": "docker-compose down",
       "docker:logs": "docker-compose logs -f",
-      "docker:logs:auth": "docker-compose logs -f auth-service"
+      "docker:logs:auth": "docker-compose logs -f auth-service",
+      
+      "prod:up": "docker-compose -f docker-compose.prod.yml --env-file env.prod up --build -d",
+      "prod:down": "docker-compose -f docker-compose.prod.yml down",
+      "prod:logs": "docker-compose -f docker-compose.prod.yml logs -f",
+      "prod:logs:auth": "docker-compose -f docker-compose.prod.yml logs -f auth-service",
+      "prod:migrate": "docker-compose -f docker-compose.prod.yml exec -w /app/auth-service auth-service pnpm exec prisma migrate deploy"
     },
     "devDependencies": {
       "typescript": "^5.0.0",

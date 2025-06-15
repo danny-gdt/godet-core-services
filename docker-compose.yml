@@ -4,7 +4,7 @@ services:
     container_name: auth-service
     build:
       context: . # Le contexte est à la racine du monorepo
-      dockerfile: auth-service/Dockerfile # On spécifie le chemin vers le Dockerfile
+      dockerfile: auth-service/Dockerfile 
     ports:
       - "3000:3000"
     environment:
@@ -15,6 +15,7 @@ services:
       REFRESH_TOKEN_SECRET: "521DE98CAEEC14C869992DA637685"
       ACCESS_TOKEN_EXPIRATION: "15m"
       REFRESH_TOKEN_EXPIRATION: "7d"
+      REDIS_URL: "redis://redis:6379" 
     depends_on:
       - postgres-db
     networks:
@@ -76,6 +77,14 @@ services:
       - ./logstash/pipeline.conf:/usr/share/logstash/pipeline/pipeline.conf:ro
     depends_on:
       - elasticsearch
+    networks:
+      - godet-net
+  
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
     networks:
       - godet-net
 
