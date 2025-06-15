@@ -12,6 +12,7 @@ env:
   ECS_CLUSTER: godet-core-services-cluster
   ECS_SERVICE: auth-service
   ECS_TASK_DEFINITION: ecs-task-definition.json
+  ECS_TASK_DEFINITION_FAMILY: ecs-task-definition
 
 jobs:
   build-and-deploy:
@@ -52,7 +53,7 @@ jobs:
 
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --task-definition ${{ env.ECS_SERVICE }} \
+          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION_FAMILY }} \
           --query taskDefinition > task-definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
