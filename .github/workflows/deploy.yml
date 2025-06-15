@@ -11,14 +11,36 @@ env:
   ECR_REPOSITORY: godet-core-services
   ECS_CLUSTER: godet-core-services-cluster
   ECS_SERVICE: auth-service
-  ECS_TASK_DEFINITION: ecs-task-definition.json
-  ECS_TASK_DEFINITION_FAMILY: ecs-task-definition
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd auth-service
+          npm install
+
+      - name: Run tests
+        run: |
+          cd auth-service
+          npm test
+
   build-and-deploy:
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: prod
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,48 +73,54 @@ jobs:
           # Save the image URI for the next step
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Download task definition
+      - name: Create ECS task definition from docker-compose
         run: |
-          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION_FAMILY }} \
-          --query taskDefinition > task-definition.json
+          # Install docker-compose
+          pip install docker-compose
+          
+          # Create task definition from docker-compose
+          docker-compose -f docker-compose.prod.yml config > docker-compose-resolved.yml
+          
+          # Convert docker-compose to ECS task definition
+          aws ecs-cli compose --file docker-compose-resolved.yml \
+            --project-name godet-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --ecs-params ecs-params.yml \
+            create
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: auth-service
-          image: ${{ steps.build-image.outputs.image }}
+      - name: Deploy to ECS using docker-compose
+        run: |
+          # Deploy using docker-compose
+          aws ecs-cli compose --file docker-compose.prod.yml \
+            --project-name godet-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --ecs-params ecs-params.yml \
+            service up --force-deployment
 
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+      - name: Wait for service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services godet-services
 
       - name: Run database migrations
         run: |
-          # Wait for the service to be stable
-          aws ecs wait services-stable \
+          # Run migrations using docker-compose
+          aws ecs-cli compose --file docker-compose.prod.yml \
+            --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
-            --services ${{ env.ECS_SERVICE }}
-          
-          # Run migrations using ECS exec or a separate task
-          aws ecs run-task \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --task-definition ${{ env.ECS_SERVICE }} \
-            --launch-type FARGATE \
-            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}" \
-            --overrides '{"containerOverrides":[{"name":"auth-service","command":["pnpm","exec","prisma","migrate","deploy"]}]}'
+            --ecs-params ecs-params.yml \
+            run --rm auth-service pnpm exec prisma migrate deploy
 
       - name: Notify deployment status
         if: always()
         run: |
           if [ ${{ job.status }} == 'success' ]; then
             echo "✅ Deployment successful!"
-            echo "Service URL: https://your-alb-domain.com"
+            echo "Services deployed:"
+            echo "- Auth Service: http://your-alb-domain:3000"
+            echo "- Kibana: http://your-alb-domain:5601"
+            echo "- Elasticsearch: http://your-alb-domain:9200"
           else
             echo "❌ Deployment failed!"
           fi 

@@ -1,0 +1,65 @@
+version: 1
+
+task_definition:
+  task_execution_role: ecsTaskExecutionRole
+  task_role_arn: ecsTaskRole
+  network_mode: awsvpc
+  requires_compatibilities:
+    - FARGATE
+  cpu: 1024
+  memory: 2048
+
+run_params:
+  network_configuration:
+    awsvpc_configuration:
+      subnets:
+        - "subnet-12345678"
+        - "subnet-87654321"
+      security_groups:
+        - "sg-12345678"
+      assign_public_ip: ENABLED
+
+services:
+  auth-service:
+    cpu: 256
+    memory: 512
+    essential: true
+    logConfiguration:
+      logDriver: awslogs
+      options:
+        awslogs-group: "/ecs/auth-service"
+        awslogs-region: "eu-west-3"
+        awslogs-stream-prefix: "ecs"
+
+  elasticsearch:
+    cpu: 512
+    memory: 1024
+    essential: true
+    logConfiguration:
+      logDriver: awslogs
+      options:
+        awslogs-group: "/ecs/elasticsearch"
+        awslogs-region: "eu-west-3"
+        awslogs-stream-prefix: "ecs"
+
+  logstash:
+    cpu: 128
+    memory: 256
+    essential: true
+    logConfiguration:
+      logDriver: awslogs
+      options:
+        awslogs-group: "/ecs/logstash"
+        awslogs-region: "eu-west-3"
+        awslogs-stream-prefix: "ecs"
+
+  kibana:
+    cpu: 128
+    memory: 256
+    essential: true
+    logConfiguration:
+      logDriver: awslogs
+      options:
+        awslogs-group: "/ecs/kibana"
+        awslogs-region: "eu-west-3"
+        awslogs-stream-prefix: "ecs" 
