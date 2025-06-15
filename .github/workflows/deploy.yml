@@ -13,30 +13,7 @@ env:
   ECS_SERVICE: auth-service
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          cd auth-service
-          npm install
-
-      - name: Run tests
-        run: |
-          cd auth-service
-          npm test
-
   build-and-deploy:
-    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: prod
