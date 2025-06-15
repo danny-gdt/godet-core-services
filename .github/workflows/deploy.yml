@@ -51,22 +51,40 @@ jobs:
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Create ECS task definition from docker-compose
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET }}
         run: |
           # Install AWS ECS CLI
           curl -o /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-latest
           chmod +x /usr/local/bin/ecs-cli
           
           # Create task definition from docker-compose
-          ecs-cli compose --file docker-compose.prod.yml \
+          ecs-cli compose --file docker-compose.ecs.yml \
             --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --ecs-params ecs-params.yml \
             create
 
       - name: Deploy to ECS using docker-compose
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+          DATABASE_URL: ${{ secrets.ARN_SECRET_MANAGER:DATABASE_URL }}
+          REDIS_URL: ${{ secrets.ARN_SECRET_MANAGERREDIS_URL }}
+          FRONTEND_URL: ${{ secrets.ARN_SECRET_MANAGER:FRONTEND_URL }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ARN_SECRET_MANAGER:ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.ARN_SECRET_MANAGER:REFRESH_TOKEN_SECRET }}
         run: |
           # Deploy using ECS CLI
-          ecs-cli compose --file docker-compose.prod.yml \
+          ecs-cli compose --file docker-compose.ecs.yml \
             --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --ecs-params ecs-params.yml \
@@ -79,9 +97,18 @@ jobs:
             --services godet-services
 
       - name: Run database migrations
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+          DATABASE_URL: ${{ secrets.ARN_SECRET_MANAGER:DATABASE_URL }}
+          REDIS_URL: ${{ secrets.ARN_SECRET_MANAGER:REDIS_URL }}
+          FRONTEND_URL: ${{ secrets.ARN_SECRET_MANAGER:FRONTEND_URL }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ARN_SECRET_MANAGER:ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.ARN_SECRET_MANAGER:REFRESH_TOKEN_SECRET }}
         run: |
           # Run migrations using ECS CLI
-          ecs-cli compose --file docker-compose.prod.yml \
+          ecs-cli compose --file docker-compose.ecs.yml \
             --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --ecs-params ecs-params.yml \

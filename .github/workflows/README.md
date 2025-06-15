@@ -10,6 +10,13 @@ Ajoutez ces secrets dans votre repository GitHub : `Settings` > `Secrets and var
 - `AWS_ACCESS_KEY_ID` - Clé d'accès AWS
 - `AWS_SECRET_ACCESS_KEY` - Clé secrète AWS
 
+### 2. Application Secrets
+- `DATABASE_URL` - URL de connexion à la base de données RDS
+- `REDIS_URL` - URL de connexion à ElastiCache Redis
+- `FRONTEND_URL` - URL du frontend en production
+- `ACCESS_TOKEN_SECRET` - Secret pour les tokens JWT d'accès
+- `REFRESH_TOKEN_SECRET` - Secret pour les tokens JWT de rafraîchissement
+
 ## Configuration AWS IAM
 
 Créez un utilisateur IAM avec les permissions suivantes :

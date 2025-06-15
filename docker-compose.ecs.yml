@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  auth-service:
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "${DATABASE_URL}"
+      REDIS_URL: "${REDIS_URL}"
+      NODE_ENV: "production"
+      FRONTEND_URL: "${FRONTEND_URL}"
+      ACCESS_TOKEN_SECRET: "${ACCESS_TOKEN_SECRET}"
+      REFRESH_TOKEN_SECRET: "${REFRESH_TOKEN_SECRET}"
+      ACCESS_TOKEN_EXPIRATION: "${ACCESS_TOKEN_EXPIRATION:-15m}"
+      REFRESH_TOKEN_EXPIRATION: "${REFRESH_TOKEN_EXPIRATION:-7d}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=godet-cluster
+      - node.name=godet-node-1
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.14.0
+    ports:
+      - "12201:12201/udp"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    volumes:
+      - ./logstash/pipeline.prod.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.14.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana-prod
+      - SERVER_HOST=0.0.0.0 
