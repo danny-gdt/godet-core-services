@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: eu-west-3
-  ECR_REPOSITORY: auth-service
+  ECR_REPOSITORY: godet-core-services
   ECS_CLUSTER: godet-core-services-cluster
   ECS_SERVICE: auth-service
   ECS_TASK_DEFINITION: ecs-task-definition.json
