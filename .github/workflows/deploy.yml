@@ -10,7 +10,7 @@ env:
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: godet-core-services
   ECS_CLUSTER: godet-core-services-cluster
-  ECS_SERVICE: auth-service
+  ECS_SERVICE: auth-service-prod
   ACTIONS_RUNNER_DEBUG: true
   ACTIONS_STEP_DEBUG: true
   ACTIONS_DEBUG: true
@@ -68,6 +68,41 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+          codedeploy-appspec: false
+
+      - name: Create ECS service if it doesn't exist
+        id: create-service
+        run: |
+          # Vérifier si le service existe
+          if aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query 'services[0].status' --output text | grep -q "ACTIVE"; then
+            echo "✅ Service ${{ env.ECS_SERVICE }} existe déjà"
+            echo "service-exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Service ${{ env.ECS_SERVICE }} n'existe pas, création..."
+            
+            # Créer le service ECS
+            aws ecs create-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service-name ${{ env.ECS_SERVICE }} \
+              --task-definition godet-auth-service \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}" \
+              --region ${{ env.AWS_REGION }}
+            
+            echo "✅ Service ${{ env.ECS_SERVICE }} créé"
+            echo "service-exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update ECS service
+        if: steps.create-service.outputs.service-exists == 'true'
+        run: |
+          # Mettre à jour le service existant
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --task-definition godet-auth-service \
+            --region ${{ env.AWS_REGION }}
 
       - name: Wait for service stability
         run: |
