@@ -52,14 +52,12 @@ jobs:
 
       - name: Create ECS task definition from docker-compose
         run: |
-          # Install docker-compose
-          pip install docker-compose
+          # Install AWS ECS CLI
+          curl -o /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-latest
+          chmod +x /usr/local/bin/ecs-cli
           
           # Create task definition from docker-compose
-          docker-compose -f docker-compose.prod.yml config > docker-compose-resolved.yml
-          
-          # Convert docker-compose to ECS task definition
-          aws ecs-cli compose --file docker-compose-resolved.yml \
+          ecs-cli compose --file docker-compose.prod.yml \
             --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --ecs-params ecs-params.yml \
@@ -67,8 +65,8 @@ jobs:
 
       - name: Deploy to ECS using docker-compose
         run: |
-          # Deploy using docker-compose
-          aws ecs-cli compose --file docker-compose.prod.yml \
+          # Deploy using ECS CLI
+          ecs-cli compose --file docker-compose.prod.yml \
             --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --ecs-params ecs-params.yml \
@@ -82,8 +80,8 @@ jobs:
 
       - name: Run database migrations
         run: |
-          # Run migrations using docker-compose
-          aws ecs-cli compose --file docker-compose.prod.yml \
+          # Run migrations using ECS CLI
+          ecs-cli compose --file docker-compose.prod.yml \
             --project-name godet-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --ecs-params ecs-params.yml \
