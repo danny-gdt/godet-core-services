@@ -11,6 +11,9 @@ env:
   ECR_REPOSITORY: godet-core-services
   ECS_CLUSTER: godet-core-services-cluster
   ECS_SERVICE: auth-service
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_DEBUG: true
 
 jobs:
   build-and-deploy:
@@ -28,24 +31,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: 🕵️ Debug Secrets
-        run: |
-          echo "--- Vérification des Secrets ---"
-          
-          # On vérifie si la variable du secret existe et n'est pas vide
-          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
-            echo "ERREUR : Le secret AWS_ACCOUNT_ID est vide ou non défini !"
-            exit 1
-          else
-            echo "Le secret AWS_ACCOUNT_ID est bien présent."
-          fi
-
-          # L'ASTUCE : On affiche les 4 premiers et les 4 derniers caractères
-          ACCOUNT_ID_SECRET="${{ secrets.AWS_ACCOUNT_ID }}"
-          echo "Vérification de l'Account ID : Les 4 premiers chiffres sont '${ACCOUNT_ID_SECRET:0:4}', les 4 derniers sont '${ACCOUNT_ID_SECRET: -4}'."
-          
-          echo "-----------------------------"
 
       - name: Login to Amazon ECR
         id: login-ecr
