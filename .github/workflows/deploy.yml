@@ -61,54 +61,66 @@ jobs:
           sed -i "s|SECRET_ARN_PLACEHOLDER|${{ secrets.AWS_SECRETS_MANAGER_ARN }}|g" ecs-task-definition.json
           sed -i "s|ACCOUNT_ID|${{ secrets.AWS_ACCOUNT_ID }}|g" ecs-task-definition.json
 
+      - name: Check if ECS service exists
+        id: check-service
+        run: |
+          # Vérifier si le service existe
+          if aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --region ${{ env.AWS_REGION }} --query 'services[0].status' --output text | grep -q "ACTIVE"; then
+            echo "service-exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Service ${{ env.ECS_SERVICE }} existe déjà"
+          else
+            echo "service-exists=false" >> $GITHUB_OUTPUT
+            echo "📝 Service ${{ env.ECS_SERVICE }} n'existe pas"
+          fi
+
+      - name: Create ECS service if it doesn't exist
+        if: steps.check-service.outputs.service-exists == 'false'
+        run: |
+          echo "🚀 Création du service ECS ${{ env.ECS_SERVICE }}..."
+          
+          # Créer le service ECS
+          aws ecs create-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service-name ${{ env.ECS_SERVICE }} \
+            --task-definition godet-auth-service \
+            --desired-count 1 \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}" \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Service ${{ env.ECS_SERVICE }} créé avec succès"
+
       - name: Deploy Amazon ECS task definition
+        if: steps.check-service.outputs.service-exists == 'true'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ecs-task-definition.json
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
-          codedeploy-appspec: false
 
-      - name: Create ECS service if it doesn't exist
-        id: create-service
+      - name: Update ECS service with new task definition
+        if: steps.check-service.outputs.service-exists == 'false'
         run: |
-          # Vérifier si le service existe
-          if aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query 'services[0].status' --output text | grep -q "ACTIVE"; then
-            echo "✅ Service ${{ env.ECS_SERVICE }} existe déjà"
-            echo "service-exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "📝 Service ${{ env.ECS_SERVICE }} n'existe pas, création..."
-            
-            # Créer le service ECS
-            aws ecs create-service \
-              --cluster ${{ env.ECS_CLUSTER }} \
-              --service-name ${{ env.ECS_SERVICE }} \
-              --task-definition godet-auth-service \
-              --desired-count 1 \
-              --launch-type FARGATE \
-              --network-configuration "awsvpcConfiguration={subnets=[${{ secrets.SUBNET_IDS }}],securityGroups=[${{ secrets.SECURITY_GROUP_IDS }}],assignPublicIp=ENABLED}" \
-              --region ${{ env.AWS_REGION }}
-            
-            echo "✅ Service ${{ env.ECS_SERVICE }} créé"
-            echo "service-exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Update ECS service
-        if: steps.create-service.outputs.service-exists == 'true'
-        run: |
-          # Mettre à jour le service existant
+          echo "🔄 Mise à jour du service avec la nouvelle task definition..."
+          
+          # Mettre à jour le service avec la nouvelle task definition
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE }} \
             --task-definition godet-auth-service \
             --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Service mis à jour avec succès"
 
       - name: Wait for service stability
         run: |
+          echo "⏳ Attente de la stabilité du service..."
           aws ecs wait services-stable \
             --cluster ${{ env.ECS_CLUSTER }} \
-            --services ${{ env.ECS_SERVICE }}
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }}
+          echo "✅ Service stable"
 
       - name: Run database migrations
         env:
