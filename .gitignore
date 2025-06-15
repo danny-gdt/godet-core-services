@@ -16,7 +16,7 @@ lerna-debug.log*
 
 # Environment
 .env
-.env.prod.example
+env.prod.example
 
 
 # Prisma
