@@ -37,23 +37,23 @@
             "secrets": [
                 {
                     "name": "DATABASE_URL",
-                    "valueFrom": "SECRET_ARN_PLACEHOLDER:database-url::"
-                },
-                {
-                    "name": "REDIS_URL",
                     "valueFrom": "SECRET_ARN_PLACEHOLDER:DATABASE_URL::"
                 },
                 {
+                    "name": "REDIS_URL",
+                    "valueFrom": "SECRET_ARN_PLACEHOLDER:REDIS_URL::"
+                },
+                {
                     "name": "FRONTEND_URL",
-                    "valueFrom": "SECRET_ARN_PLACEHOLDER:frontend-url::"
+                    "valueFrom": "SECRET_ARN_PLACEHOLDER:FRONTEND_URL::"
                 },
                 {
                     "name": "ACCESS_TOKEN_SECRET",
-                    "valueFrom": "SECRET_ARN_PLACEHOLDER:access-token-secret::"
+                    "valueFrom": "SECRET_ARN_PLACEHOLDER:ACCESS_TOKEN_SECRET::"
                 },
                 {
                     "name": "REFRESH_TOKEN_SECRET",
-                    "valueFrom": "SECRET_ARN_PLACEHOLDER:refresh-token-secret::"
+                    "valueFrom": "SECRET_ARN_PLACEHOLDER:REFRESH_TOKEN_SECRET::"
                 }
             ],
             "logConfiguration": {

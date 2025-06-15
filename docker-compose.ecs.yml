@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   auth-service:
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
